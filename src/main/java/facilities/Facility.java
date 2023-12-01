@@ -1,11 +1,10 @@
 package facilities;
 
-public class Facility
-{
-    public enum Constants
-    {
-        //maxLevel, baseCapacity, then baseCost
-        //useful when it is known whether a facility is a hall, lab, or theatre
+public class Facility {
+    // Read-only store of data to keep values maintained
+    public enum Constants {
+        // The order is maxLevel, baseCapacity, then baseCost
+        // Useful when it is known whether a facility is a hall, lab, or theatre
         HALL(new int[]{4, 6, 100}),
         LAB(new int[]{5, 5, 300}),
         THEATRE(new int[]{6, 10, 200});
@@ -38,14 +37,11 @@ public class Facility
     {
         level++;
     }
-    public int getUpgradeCost()
-    {
-        if (level == maxLevel)
-        {
+    public int getUpgradeCost() {
+        if (level == maxLevel) {
             return -1;
         }
-        else
-        {
+        else {
             return baseCost * (level + 1);
         }
     }

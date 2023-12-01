@@ -1,7 +1,6 @@
 package facilities.buildings;
 
-public interface Building
-{
+public interface Building {
     int getLevel();
     void increaseLevel();
     int getUpgradeCost();
