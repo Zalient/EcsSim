@@ -342,4 +342,12 @@ public class University {
                     humanResource.getStaffSalary().get(staff));
         }
     }
+    public int getReputation()
+    {
+        return reputation;
+    }
+    public float getBudget()
+    {
+        return budget;
+    }
 }
