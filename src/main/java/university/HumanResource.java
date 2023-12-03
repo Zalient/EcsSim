@@ -8,7 +8,7 @@ public class HumanResource {
     HashMap<Staff, Float> staffSalary;
     public HumanResource()
     {
-        staffSalary = new HashMap<Staff, Float>();
+        staffSalary = new HashMap<>();
     }
     public void addStaff(Staff staff) {
         float randomPercentage = (float) (Math.random() + 9.5);

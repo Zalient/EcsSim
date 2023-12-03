@@ -3,15 +3,14 @@ import university.University;
 import java.util.ArrayList;
 
 public class EcsSim {
-    private University university;
+    private final University university;
     private ArrayList<Staff> staffMarket;
 
-    public EcsSim() {
-        // Funding can be 0 for now
-        university = new University(10000);
-        staffMarket = new ArrayList<Staff>();
+    public EcsSim(int initialFunding, ArrayList<Staff> _staffMarket) {
+        university = new University(initialFunding);
+        staffMarket = _staffMarket;
     }
-    public void simulate() {
+    private void simulate() {
         // Simulate a year of running the university - methods should always go in this order
         // 1a
         university.buildOrUpgrade();
@@ -42,7 +41,7 @@ public class EcsSim {
         printStaffMarketInfo();
         System.out.println();
     }
-    public void simulate(int years) {
+    private void simulate(int years) {
         for (int i = 0; i < years; i++) {
             try {
                 Thread.sleep(500);
@@ -53,15 +52,24 @@ public class EcsSim {
             }
         }
     }
-    public University getUniversity()
-    {
-        return university;
+    public static void main(String[] args) {
+        if (args.length != 3) {
+            System.out.println("Usage: java EcsSim <staffConfigurationFile> <initialFunding> " +
+                    "<simulationYears>");
+            System.exit(1);
+        }
+        String staffConfigFile = args[0];
+        int initialFunding = Integer.parseInt(args[1]);
+        int simulationYears = Integer.parseInt(args[2]);
+        try {
+            StaffReader staffReader = new StaffReader(staffConfigFile);
+            EcsSim ecsSim = new EcsSim(initialFunding, staffReader.readStaffMarket());
+            ecsSim.simulate(simulationYears);
+            } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
-    public ArrayList<Staff> getStaffMarket()
-    {
-        return staffMarket;
-    }
-    public void printStaffMarketInfo() {
+    private void printStaffMarketInfo() {
         System.out.println("\nMarket");
         for (Staff staff : staffMarket) {
             System.out.println(staff.getName() + "(" + staff.getSkill() + "): " + staff.getStamina() +

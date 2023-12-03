@@ -1,11 +1,6 @@
-import university.*;
-import facilities.*;
-
-import java.util.Iterator;
-
 public class Main {
     public static void main(String[] args) {
-        EcsSim ecsSim = new EcsSim();
-        ecsSim.simulate(50);
+        /*EcsSim ecsSim = new EcsSim(10000);
+        ecsSim.simulate(50);*/
     }
 }

@@ -1,7 +1,7 @@
 package university;
 
 public class Staff {
-    private String name;
+    private final String name;
     private int skill;
     private int yearsOfTeaching;
     private int stamina;
