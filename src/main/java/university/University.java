@@ -8,6 +8,7 @@ import facilities.buildings.Theatre;
 import java.util.*;
 
 public class University {
+    int years = 0;
     private final HumanResource humanResource;
     private float budget;
     private final Estate estate;
@@ -31,7 +32,7 @@ public class University {
             reputation += 100;
             System.out.println("Built Building (" + type + "): level 1");
         }
-        return estate.addFacility(type, name);
+        return builtFacility;
     }
     private void upgrade(Building building) throws Exception {
         int upgradeCost = building.getUpgradeCost();
@@ -110,6 +111,9 @@ public class University {
                         try {
                             if (budget >= highestLevelBuilding.getUpgradeCost())
                                 upgrade(highestLevelBuilding);
+                            else {
+                                break;
+                            }
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
@@ -119,6 +123,9 @@ public class University {
                         if (budget >= highestLevelBuilding.getBaseCost()) {
                             build(minCapacityBuildingType,
                                     minCapacityBuildingType.substring(0, 1));
+                        }
+                        else {
+                            break;
                         }
                     }
                 }
@@ -188,93 +195,121 @@ public class University {
         }
         return levelCombinationsCapacity;
     }
-    public ArrayList<Staff> hireStaff(ArrayList<Staff> staffMarket) {
-        return staffMarket;
-    }
-    public void allocateStaff() {
+    private HashMap<Staff, Integer> hireStaff(ArrayList<Staff> staffMarket) {
+        // Fire all staff before starting - e.g. if I have 2 staff already (because 1 of them was taking
+        // the load while the other rested) then I want it to go back down to 1 staff if the
+        // staff that rested is back to 100 stamina
+        if (years == 76) {
+            System.out.println();
+        }
+        years++;
 
+        HashMap<Staff, Integer> staffAllocationMap = new HashMap<>();
+        int totalNumberInstructed = 0;
+        // Count variable to account for scalability e.g. as more students get added,
+        // the stamina decrease will inevitably continue to increase due to the finite pool of staff
+        // Additionally, 20 + staff.getSkill() provides a nice way to give higher skill staff more
+        // students but to make it scalable, it is necessary to multiply it by a scaling factor
+        // (the count) which means I do not get stuck in the loop where numStudents > totalNumberInstructed
+        int count = 0;
+        float averageStamina = getAverageStamina(staffMarket);
+        // When all available staff have no stamina, the simulation has to stop
+        if (averageStamina != 0) {
+            while (estate.getNumberOfStudents() > totalNumberInstructed) {
+                Iterator<Staff> staffIterator = humanResource.getStaff();
+                while (staffIterator.hasNext()) {
+                    Staff staff = staffIterator.next();
+                    staffMarket.add(staff);
+                    staffIterator.remove();
+                }
+                // Lowest to highest skill - minimising salary costs
+                staffMarket.sort(Comparator.comparing(Staff::getSkill));
+                totalNumberInstructed = 0;
+                count++;
+                Iterator<Staff> staffMarketIterator = staffMarket.iterator();
+                while (staffMarketIterator.hasNext()) {
+                    Staff staff = staffMarketIterator.next();
+                    if (!(humanResource.getStaffSalary().containsKey(staff))
+                            && staff.getYearsOfTeaching() < 30) {
+                        // If number to instruct <= 20 + staff.get(skill) then stamina decrease is 20,
+                        // simulateNumber
+                        // is a dummy variable to simulate the changes in number of instructed students
+                        int simulateNumberInstructed =
+                                Math.min(20 + staff.getSkill(), estate.getNumberOfStudents());
+                        // Stamina decrease formula specified in specification
+                        int staminaDecrease =
+                                (int)
+                                        java.lang.Math.ceil(
+                                                (double) simulateNumberInstructed / (20 + staff.getSkill()))
+                                        * 20;
+                        // Add staff that have relatively low stamina so that they can recharge
+                        // If the staff aren't going to rest, they need to have a low stamina decrease, and it
+                        // must be checked that numStudents < totalNumberInstructed so that the entire staff
+                        // market doesn't get added
+                        if ((staminaDecrease <= 20 * count
+                                && estate.getNumberOfStudents() > totalNumberInstructed)
+                                || staff.getStamina() < averageStamina) {
+                            humanResource.addStaff(staff);
+                            staffMarketIterator.remove();
+                            // Only working staff have students allocated to them
+                            if (staff.getStamina() * count >= averageStamina) {
+                                // Scale the number instructed by count
+                                totalNumberInstructed += simulateNumberInstructed * count;
+                                staffAllocationMap.put(staff, simulateNumberInstructed * count);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            System.out.println("\nNo stamina left on available staff => simulation stopped");
+            System.exit(0);
+        }
+        return staffAllocationMap;
     }
-    /*public ArrayList<Staff> hireStaff(ArrayList<Staff> staffMarket) {
-        Facility[] facilities = estate.getFacilities();
-        int hallCount = 0;
-        for (Facility facility : facilities) {
-            if (facility instanceof Hall) {
-                hallCount++;
+    public HashMap<Staff, Integer> hireAndAllocateStaff(ArrayList<Staff> staffMarket) {
+        HashMap<Staff, Integer> staffAllocationMap = hireStaff(staffMarket);
+        int totalNumberInstructed = 0;
+        for (Integer allocatedStudents : staffAllocationMap.values())
+        {
+            totalNumberInstructed += allocatedStudents;
+        }
+        // The totalNumberInstructed is always greater than estate.getNumberOfStudents() by this point so
+        // the difference needs to be split by the number of working staff and subtracted from what they
+        // would have been allocated
+        int difference = totalNumberInstructed - estate.getNumberOfStudents();
+        int amountToRemoveFromEach = difference / staffAllocationMap.size();
+        // If difference = 5 and size = 3 then amount = 1 with 2 remainder
+        int leftover = difference % staffAllocationMap.size();
+        for (Staff staff : staffAllocationMap.keySet())
+        {
+            instructedStudents += staff.instruct(staffAllocationMap.get(staff) -
+                    amountToRemoveFromEach - leftover);
+            // Update staff allocation map
+            staffAllocationMap.put(staff, staffAllocationMap.get(staff) -
+                    amountToRemoveFromEach - leftover);
+            // Only one staff can get rid of the leftover amount
+            leftover = 0;
+        }
+        return staffAllocationMap;
+    }
+    private float getAverageStamina(ArrayList<Staff> staffMarket) {
+        ArrayList<Staff> combinedStaff = new ArrayList<>();
+        combinedStaff.addAll(humanResource.getStaffSalary().keySet());
+        combinedStaff.addAll(staffMarket);
+        int totalStamina = 0;
+        for (Staff staff : combinedStaff) {
+            if (staff.getYearsOfTeaching() < 30) {
+                totalStamina += staff.getStamina();
             }
         }
-        // Not including number of halls as no staff required for hall facilities
-        int staffedFacilitiesSize = facilities.length - hallCount;
-        int currentStaffSize = humanResource.getNumberOfStaff();
-        // If number of facilities - number of staff <= 0 then don't need more staff
-        if (staffedFacilitiesSize - currentStaffSize > 0) {
-            ArrayList<Staff> labStaffList = new ArrayList<Staff>();
-            ArrayList<Staff> theatreStaffList = new ArrayList<Staff>();
-            for (Staff staff : staffMarket) {
-                // Medium skill for lab and high skill for theatre
-                if (staff.getSkill() >= 50 && staff.getSkill() < 80) {
-                    labStaffList.add(staff);
-                }
-                else if (staff.getSkill() >= 80) {
-                    theatreStaffList.add(staff);
-                }
-            }
-            int labCount = 0;
-            int theatreCount = 0;
-            for (int i = 0; i < staffedFacilitiesSize - currentStaffSize; i++) {
-                // Only add staff to lab and theatres
-                // Amount of labs and theatres may differ so do not want medium skill assigned to theatres
-                // Therefore need to access the different lists for each
-                if (facilities[i] instanceof Lab && labCount < labStaffList.size()) {
-                    humanResource.addStaff(labStaffList.get(labCount));
-                    staffMarket.remove(labStaffList.get(labCount));
-                    labCount++;
-                }
-                else if (facilities[i] instanceof Theatre && theatreCount < theatreStaffList.size()) {
-                    humanResource.addStaff(theatreStaffList.get(theatreCount));
-                    staffMarket.remove(theatreStaffList.get(theatreCount));
-                    theatreCount++;
-                }
-            }
-        }
-        return staffMarket;
-    }*/
-    /*public void allocateStaff() {
-        // High skill -> theatres and medium skill -> labs
-        // So lab and theatre capacities considered separately
-        Facility[] facilities = estate.getFacilities();
-        ArrayList<Integer> labCapacityList = new ArrayList<Integer>();
-        ArrayList<Integer> theatreCapacityList = new ArrayList<Integer>();
-        for (Facility facility : facilities) {
-            if (facility instanceof Lab) {
-                labCapacityList.add(facility.getCapacity());
-            }
-            else if (facility instanceof Theatre) {
-                theatreCapacityList.add(facility.getCapacity());
-            }
-        }
-        Iterator<Staff> staffIterator = humanResource.getStaff();
-        int labCount = 0;
-        int theatreCount = 0;
-        while (staffIterator.hasNext()) {
-            Staff staff = staffIterator.next();
-            if (staff.getSkill() >= 50 && staff.getSkill() < 80) {
-                staff.instruct(labCapacityList.get(labCount));
-                instructedStudents += labCapacityList.get(labCount);
-                labCount++;
-            }
-            else if (staff.getSkill() >= 80) {
-                staff.instruct(theatreCapacityList.get(theatreCount));
-                instructedStudents += theatreCapacityList.get(theatreCount);
-                theatreCount++;
-            }
-        }
-    }*/
-    public void payMaintenanceCost()
-    {
+        return (float) totalStamina / combinedStaff.size();
+    }
+    public void payMaintenanceCost() {
         budget -= estate.getMaintenanceCost();
     }
-    public void payStaffSalary()
-    {
+    public void payStaffSalary() {
         budget -= humanResource.getTotalSalary();
     }
     public void increaseStaffTeachingYears() {
@@ -291,27 +326,26 @@ public class University {
         }
         System.out.println("University (" + reputation + "): " + budget + " (BUD)");
     }
-    public void handleStaffLeaving() {
+    public void handleStaffLeaving(ArrayList<Staff> staffMarket) {
         Iterator<Staff> staffIterator = humanResource.getStaff();
-        HashMap<Staff, Float> staffSalary = humanResource.getStaffSalary();
         while (staffIterator.hasNext()) {
             Staff staff = staffIterator.next();
-            // On 30th year staff quits
-            if (staff.getYearsOfTeaching() == 30) {
-                staffSalary.remove(staff);
-            }
-            else {
-                // Chance staff stays is staff's stamina so 100 stamina => staff stays
-                int staffStamina = staff.getStamina();
-                // 1 to 100
-                double random = Math.random() * 100 + 1;
-                // E.g. when staffStamina = 100 (100%), random will always be lower or equal, so
-                // it will be false and staff will stay
-                // When staffStamina = 0 (0%), random will always be higher, so it will be true
-                // and staff will leave
-                if (random > staffStamina) {
-                    staffSalary.remove(staff);
-                }
+            // Chance staff stays is staff's stamina so 100 stamina => staff stays
+            int staffStamina = staff.getStamina();
+            // 1 to 100
+            double random = Math.random() * 100 + 1;
+            // E.g. when staffStamina = 100 (100%), random will always be lower or equal, so
+            // it will be false and staff will stay
+            // When staffStamina = 0 (0%), random will always be higher, so it will be true
+            // and staff will leave
+
+            // On 30th year staff quits OR staff's stamina as a percentage chance of staying
+            if (staff.getYearsOfTeaching() >= 30 || random > staffStamina) {
+                staffMarket.add(staff);
+                staffIterator.remove();
+                System.out.println(staff.getName() + " (" + staff.getSkill() + "): " +
+                        staff.getStamina() + " (STA), " + staff.getYearsOfTeaching() +
+                        " (TEA) has left the university");
             }
         }
     }
@@ -328,8 +362,13 @@ public class University {
         System.out.println("*Estate*");
         System.out.println("Number of students: " + estate.getNumberOfStudents());
         for (Facility facility : estate.getFacilities()) {
-            System.out.println("Building (" + facility.getClass().getSimpleName() + "): level " +
-                    ((Building) facility).getLevel());
+            if (facility instanceof Building) {
+                System.out.println("Building (" + facility.getClass().getSimpleName() + "): level " +
+                        ((Building) facility).getLevel());
+            }
+            else {
+                System.out.println("Facility (" + facility.getClass().getSimpleName() + ")");
+            }
         }
     }
     public void printHRInfo() {
@@ -349,5 +388,24 @@ public class University {
     public float getBudget()
     {
         return budget;
+    }
+    public void printHiredStaff() {
+        Iterator<Staff> staffIterator = humanResource.getStaff();
+        while (staffIterator.hasNext()) {
+            Staff staff = staffIterator.next();
+            System.out.println("Hired " + staff.getName() + " (" + staff.getSkill() + "): " +
+                    staff.getStamina() + " (STA), " + staff.getYearsOfTeaching() + " (TEA)");
+        }
+    }
+    public void printStaffInstructing(HashMap<Staff, Integer> staffAllocationMap) {
+        for (Staff staff : staffAllocationMap.keySet()) {
+            int reputationIncrease = (100 * staff.getSkill()) / (100 + staffAllocationMap.get(staff));
+            System.out.println(staff.getName() + " (" + staff.getSkill() + "): " + staff.getStamina()
+                    + " (STA), " + staff.getYearsOfTeaching() + " (TEA) instructs " +
+                    staffAllocationMap.get(staff) + " gains " + reputationIncrease);
+        }
+    }
+    public HumanResource getHumanResource() {
+        return humanResource;
     }
 }

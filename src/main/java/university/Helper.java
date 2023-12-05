@@ -1,8 +1,7 @@
 package university;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
+
+import java.util.*;
 
 public class Helper {
     // Adapted from: https://stackoverflow.com/questions/1383797/java-hashmap-how-to-get-key-from-value

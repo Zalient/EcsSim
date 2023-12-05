@@ -14,14 +14,11 @@ public class HumanResource {
         float randomPercentage = (float) (Math.random() + 9.5);
         float salary = staff.getSkill() * (randomPercentage / 100);
         staffSalary.put(staff, salary);
-        System.out.println("Hired " + staff.getName() + "(" + staff.getSkill() + "): " +
-                staff.getStamina() + " (STA), " + staff.getYearsOfTeaching() + " (TEA)");
     }
     public Iterator<Staff> getStaff()
     {
         return staffSalary.keySet().iterator();
     }
-    public int getNumberOfStaff() { return staffSalary.keySet().size(); }
     public float getTotalSalary() {
         Collection<Float> salaries = staffSalary.values();
         float totalSalary = 0;

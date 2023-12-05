@@ -1,6 +1,10 @@
 package facilities.buildings;
 import facilities.Facility;
 public class Lab extends Facility implements Building {
+    private final int baseCost;
+    private final int baseCapacity;
+    private final int maxLevel;
+    private int level;
     public Lab(String name) {
         super(name);
         level = 1;

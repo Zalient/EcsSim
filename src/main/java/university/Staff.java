@@ -15,14 +15,15 @@ public class Staff {
     public int instruct(int numberOfStudents) {
         // If skill is already 100 then do not go above it
         skill = (skill == 100) ? 100 : skill + 1;
-        // Stamina decrease formula
-        stamina = stamina - (int)java.lang.Math.ceil((double) numberOfStudents /(20 + skill)) * 20;
+        // Stamina decrease formula - has to be between 0 and 100 inclusive
+        if (stamina - (int)java.lang.Math.ceil((double) numberOfStudents /(20 + skill)) * 20 >= 0) {
+            stamina -= (int)java.lang.Math.ceil((double) numberOfStudents /(20 + skill)) * 20;
+        }
+        else {
+            stamina = 0;
+        }
         // Reputation points according to numberOfStudents
-        int reputationIncrease = (100 * skill) / (100 + numberOfStudents);
-        System.out.println(name + " (" + skill + "): " + stamina
-                + " (STA), " + yearsOfTeaching + " (TEA) instructs " +
-                numberOfStudents + " gains " + reputationIncrease);
-        return reputationIncrease;
+        return (100 * skill) / (100 + numberOfStudents);
     }
     public void replenishStamina()
     {

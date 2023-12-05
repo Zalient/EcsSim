@@ -77,6 +77,7 @@ public class Estate {
             }
         }
         ArrayList<Integer> levels = new ArrayList<>(buildingToLevelMap.values());
+        // Lowest to highest
         Collections.sort(levels);
         for (Integer level : levels) {
             for (Map.Entry<Building, Integer> entry : buildingToLevelMap.entrySet()) {
