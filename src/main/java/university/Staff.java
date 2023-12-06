@@ -49,4 +49,10 @@ public class Staff {
     {
         return yearsOfTeaching;
     }
+    public void setStamina(int _stamina) {
+        stamina = _stamina;
+    }
+    public void setYearsOfTeaching(int _yearsOfTeaching) {
+        yearsOfTeaching = _yearsOfTeaching;
+    }
 }

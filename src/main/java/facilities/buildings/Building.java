@@ -22,4 +22,5 @@ public interface Building {
     int getMaxLevel();
     int getBaseCapacity();
     int getBaseCost();
+    void setLevel(int _level);
 }

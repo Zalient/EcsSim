@@ -1,12 +1,15 @@
+import facilities.Facility;
+import facilities.buildings.Building;
 import university.Staff;
 import university.University;
 
-import java.lang.reflect.Array;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
-public class EcsSim {
-    private final University university;
+public class EcsSim implements Serializable {
+    private static University university = null;
     private final ArrayList<Staff> staffMarket;
     public EcsSim(int initialFunding, ArrayList<Staff> _staffMarket) {
         university = new University(initialFunding);
@@ -46,7 +49,7 @@ public class EcsSim {
     public void simulate(int years) {
         for (int i = 0; i < years; i++) {
             try {
-                Thread.sleep(0);
+                Thread.sleep(200);
                 int count = 0;
                 ArrayList<Staff> combinedStaff = new ArrayList<>();
                 combinedStaff.addAll(staffMarket);
@@ -63,6 +66,7 @@ public class EcsSim {
                 else {
                     System.out.println("***** Year " + i + " *****");
                     simulate();
+                    save(i + 1, years);
                 }
             } catch (InterruptedException e) {
                 // Terminate the simulation
@@ -78,11 +82,19 @@ public class EcsSim {
         String staffConfigFile = args[0];
         int initialFunding = Integer.parseInt(args[1]);
         int simulationYears = Integer.parseInt(args[2]);
+        Toolbox myToolbox = new Toolbox();
+        System.out.println("Would you like to load or start a new simulation? (L/S)");
+        String choice = myToolbox.readStringFromCmd();
         try {
-            StaffReader staffReader = new StaffReader(staffConfigFile);
-            EcsSim ecsSim = new EcsSim(initialFunding, staffReader.readStaffMarket());
-            ecsSim.simulate(simulationYears);
-            } catch (Exception e) {
+            if (Objects.equals(choice, "S")) {
+                Reader staffReader = new Reader(staffConfigFile);
+                EcsSim ecsSim = new EcsSim(initialFunding, staffReader.readStaffMarket());
+                ecsSim.simulate(simulationYears);
+            }
+            else {
+                load();
+            }
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -92,5 +104,64 @@ public class EcsSim {
             System.out.println(staff.getName() + " (" + staff.getSkill() + "): " + staff.getStamina() +
                     " (STA), " + staff.getYearsOfTeaching() + " (TEA)");
         }
+    }
+    public void save(int currentYear, int totalYears) {
+        try {
+            // Save staff
+            PrintStream ps = new PrintStream(new FileOutputStream("staffSave.txt"));
+            ArrayList<Staff> combinedStaff = new ArrayList<>();
+            combinedStaff.addAll(university.getHumanResource().getStaffSalary().keySet());
+            combinedStaff.addAll(staffMarket);
+            for (Staff staff : combinedStaff) {
+                ps.println(staff.getName() + "," + staff.getSkill() + "," + staff.getStamina() + ","
+                        + staff.getYearsOfTeaching());
+            }
+            ps.close();
+            // Save facilities
+            ps = new PrintStream(new FileOutputStream("facilitiesSave.txt"));
+            for (Facility facility : university.getEstate().getFacilities()) {
+                ps.println(
+                        facility.getClass().getSimpleName() + "," + facility.getName() + ","
+                                + ((Building) facility).getLevel());
+            }
+            ps.close();
+            // Save years
+            ps = new PrintStream(new FileOutputStream("yearsSave.txt"));
+            ps.println(currentYear + "," + totalYears);
+            ps.close();
+            // Save budget
+            ps = new PrintStream(new FileOutputStream("budgetSave.txt"));
+            ps.println(university.getBudget());
+            ps.close();
+            // Save reputation
+            ps = new PrintStream(new FileOutputStream("reputationSave.txt"));
+            ps.println(university.getReputation());
+            ps.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public static void load() {
+        Reader loadReader = new Reader("yearsSave.txt");
+        int[] years = loadReader.readSavedYears();
+        int currentYear = years[0];
+        int totalYears = years[1];
+
+        loadReader = new Reader("budgetSave.txt");
+        float budget = loadReader.readSavedBudget();
+
+        loadReader = new Reader("reputationSave.txt");
+        int reputation = loadReader.readSavedReputation();
+
+        loadReader = new Reader("staffSave.txt");
+        ArrayList<Staff> savedStaff = loadReader.readSavedStaff();
+
+        EcsSim ecsSim = new EcsSim((int) budget, savedStaff);
+        university.setReputation(reputation);
+
+        loadReader = new Reader("facilitiesSave.txt");
+        loadReader.readSavedFacilities(university);
+
+        ecsSim.simulate(totalYears - currentYear);
     }
 }

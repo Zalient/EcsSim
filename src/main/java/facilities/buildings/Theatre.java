@@ -40,4 +40,7 @@ public class Theatre extends Facility implements Building {
     {
         return baseCost;
     }
+    public void setLevel(int _level) {
+        level = _level;
+    }
 }

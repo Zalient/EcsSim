@@ -8,7 +8,6 @@ import facilities.buildings.Theatre;
 import java.util.*;
 
 public class University {
-    int years = 0;
     private final HumanResource humanResource;
     private float budget;
     private final Estate estate;
@@ -196,14 +195,6 @@ public class University {
         return levelCombinationsCapacity;
     }
     private HashMap<Staff, Integer> hireStaff(ArrayList<Staff> staffMarket) {
-        // Fire all staff before starting - e.g. if I have 2 staff already (because 1 of them was taking
-        // the load while the other rested) then I want it to go back down to 1 staff if the
-        // staff that rested is back to 100 stamina
-        if (years == 76) {
-            System.out.println();
-        }
-        years++;
-
         HashMap<Staff, Integer> staffAllocationMap = new HashMap<>();
         int totalNumberInstructed = 0;
         // Count variable to account for scalability e.g. as more students get added,
@@ -217,6 +208,11 @@ public class University {
         if (averageStamina != 0) {
             while (estate.getNumberOfStudents() > totalNumberInstructed) {
                 Iterator<Staff> staffIterator = humanResource.getStaff();
+                // Fire all staff - e.g. if I have 2 staff already (because 1 of them was taking
+                // the load while the other rested) then I want it to go back down to 1 staff if the
+                // staff that rested is back to 100 stamina
+                // This has the side benefit of making sure that all staff operate on the same count
+                // which makes student allocation fair
                 while (staffIterator.hasNext()) {
                     Staff staff = staffIterator.next();
                     staffMarket.add(staff);
@@ -407,5 +403,8 @@ public class University {
     }
     public HumanResource getHumanResource() {
         return humanResource;
+    }
+    public void setReputation(int _reputation) {
+        reputation = _reputation;
     }
 }
