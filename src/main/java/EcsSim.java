@@ -11,6 +11,7 @@ import java.util.Objects;
 public class EcsSim implements Serializable {
     private static University university = null;
     private final ArrayList<Staff> staffMarket;
+    private static int currentYear;
     public EcsSim(int initialFunding, ArrayList<Staff> _staffMarket) {
         university = new University(initialFunding);
         staffMarket = _staffMarket;
@@ -47,7 +48,7 @@ public class EcsSim implements Serializable {
         System.out.println();
     }
     public void simulate(int years) {
-        for (int i = 0; i < years; i++) {
+        while (currentYear < years) {
             try {
                 Thread.sleep(200);
                 int count = 0;
@@ -64,9 +65,10 @@ public class EcsSim implements Serializable {
                     break;
                 }
                 else {
-                    System.out.println("***** Year " + i + " *****");
+                    System.out.println("***** Year " + currentYear + " *****");
                     simulate();
-                    save(i + 1, years);
+                    currentYear++;
+                    save(currentYear, years);
                 }
             } catch (InterruptedException e) {
                 // Terminate the simulation
@@ -87,6 +89,7 @@ public class EcsSim implements Serializable {
         String choice = myToolbox.readStringFromCmd();
         try {
             if (Objects.equals(choice, "S")) {
+                currentYear = 0;
                 Reader staffReader = new Reader(staffConfigFile);
                 EcsSim ecsSim = new EcsSim(initialFunding, staffReader.readStaffMarket());
                 ecsSim.simulate(simulationYears);
@@ -144,7 +147,7 @@ public class EcsSim implements Serializable {
     public static void load() {
         Reader loadReader = new Reader("yearsSave.txt");
         int[] years = loadReader.readSavedYears();
-        int currentYear = years[0];
+        currentYear = years[0];
         int totalYears = years[1];
 
         loadReader = new Reader("budgetSave.txt");
@@ -162,6 +165,6 @@ public class EcsSim implements Serializable {
         loadReader = new Reader("facilitiesSave.txt");
         loadReader.readSavedFacilities(university);
 
-        ecsSim.simulate(totalYears - currentYear);
+        ecsSim.simulate(totalYears);
     }
 }
